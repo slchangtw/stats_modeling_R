@@ -1,0 +1,233 @@
+---
+title: "Homework 1"
+author: "Shun-Lung Chang, Dilip Hiremath"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = "", fig.align = 'center', fig.height = 4, fig.width = 4)
+```
+
+
+```{r}
+load("data/bank.Rdata") # read the data into R
+```
+
+## 1. To start with, you compute the naive model for current salary (SALNOW) as the dependent variable.
+### (a) Calculate the model and specify the model equation.
+
+```{r}
+mod <- lm(SALNOW ~ 1, data = bank)
+summary(mod)
+```
+
+As the summary shows, the model equation is $\widehat{Salary_i} = 13767.8$.
+
+### (b) Compute the residual sum of squares for this model, i.e. compute the sum of the squared residuals.
+
+```{r}
+deviance(mod)
+```
+
+The sum of the squared residuals is `r round(deviance(mod), 0)`.
+
+### (c) Compute the residual standard error for this model, i.e. compute the square root of the residual sum of squares divided by n - 1, where n is the sample size.
+
+```{r}
+sqrt(deviance(mod)/(nrow(bank) - 1))
+```
+
+The residual standard error is `r round(sqrt(deviance(mod)/(nrow(bank) - 1)), 2)`.
+
+## 2. As second step, you compute a simple linear regression model for current salary (SALNOW) as the dependent variable using education level (EDLEVEL) as a predictor.
+
+### (a) Calculate the model and specify the model equation.
+
+```{r}
+mod_2 <- lm(SALNOW ~ EDLEVEL, data = bank)
+summary(mod_2)
+```
+
+The model equation is $\widehat{Salary_i} = -7332.47 + 1563.96 * EDLEVEL_i$.
+
+### (b) Compute the residual sum of squares for this model, i.e. compute the sum of the squared residuals.
+
+```{r}
+deviance(mod_2)
+```
+
+The residual sum of squares is `r round(deviance(mod_2), 0)`.
+
+### (c) Compute the residual standard error for this model, i.e. compute the square root of the residual sum of squares divided by n - 2, where n is the sample size.
+
+```{r}
+sqrt(deviance(mod_2)/(nrow(bank) - 2))
+```
+
+The residual standard error is `r round(sqrt(deviance(mod_2)/(nrow(bank) - 2)), 2)`.
+
+## 3. In a third model, you add gender (SEX) as an additional predictor to education level.
+(a) Calculate the model and specify the model equation.
+
+```{r}
+mod_3 <- lm(SALNOW ~ EDLEVEL + SEX, data = bank)
+summary(mod_3)
+```
+
+The model equation is $\widehat{Salary_i} = -6369.78 + 1356.67 * EDLEVEL_i + 3369.38 * SEX (if Male)_i$.
+
+(b) Compute the residual sum of squares for this model, i.e. compute the sum of the squared residuals.
+
+```{r}
+deviance(mod_3)
+```
+
+The residual sum of squares is `r round(deviance(mod_3), 0)`.
+
+(c) Compute the residual standard error for this model, i.e. compute the square root of the residual sum of squares divided by n - 3, where n is the sample size.
+
+```{r}
+sqrt(deviance(mod_3)/(nrow(bank) - 3))
+```
+
+The residual standard error is `r round(sqrt(deviance(mod_3)/(nrow(bank) - 3)), 2)`.
+
+## 4. You continue with the last model using education level and gender as predictors and investigate the residuals in more detail.
+
+### (a) Draw a histogram, a boxplot, a density plot, and a Q-Q-plot to assess normality of the residuals. Give a brief summary report on these plots!
+
+```{r}
+res <- resid(mod_3)
+```
+
+```{r}
+hist(res, main = 'Histogram of Residuals', xlab = 'Residuals')
+```
+
+```{r}
+boxplot(res, main = 'Boxplot of Residuals', xlab = 'Residuals', horizontal = TRUE)
+```
+
+```{r}
+plot(density(res), main = "Density of Residuals", xlab = "Residual")
+```
+
+```{r}
+qqnorm(res)
+qqline(res, col = "red")
+```
+
+The distribution is right-skewed and the points in the Q-Q plot do not all lie on the theoretical line, and hence the residuals do not follow a normally distribution.
+
+### (b) Use the Kolmogorov-Smirnov-Test to check whether the residuals follow a normal distribution.
+```{r}
+ks.test(res, "pnorm")
+```
+
+The p-value is small enough to reject the null hypothesis in Kolmogorov-Smirnov test, thus the residuals are not normally distributed.
+
+## 5. Plot observed salaries against the ones predicted by the above model (use either the command *fitted* or the stored scores in *modelname$fitted.values* to obtain the fitted scores). Compute the Pearson correlation coefficient between observed and fitted salaries. How can you check your result using results from the regression table?
+
+```{r}
+plot(bank$SALNOW, mod_3$fitted.values, 
+     main = "Observed Salaries vs. Fitted Salary", 
+     xlab = "Observed Salaries", 
+     ylab = "Fitted Salaries")
+```
+
+```{r}
+cor(bank$SALNOW, mod_3$fitted.values)
+```
+
+The Pearson correlation coefficient is around `r round(cor(bank$SALNOW, mod_3$fitted.values), 3)`. Besides, the square of the correlation coefficient (`r round(cor(bank$SALNOW, mod_3$fitted.values) ^ 2, 3)`) is same as the R-squared reported in Task 3(a).
+
+## 6. Plot the residuals against the observed salaries. Does the plot look similar to what you had expected? Compute the Pearson correlation coefficient and comment on it!
+
+```{r}
+plot(res, bank$SALNOW, 
+     main = "Residuals vs. Observed Salaries", 
+     xlab = "Residuals", 
+     ylab = "Observed Salaries")
+```
+
+```{r}
+cor(res, bank$SALNOW)
+```
+
+The Pearson correlation coefficient is `r round(cor(res, bank$SALNOW), 2)`, indicating observed salaries are positively correlated with residuals. The reason lies in the fact that regression models with few predictors tend to predict average values of the response variable. Therefore, the actual salaries deviated greatly from the mean led to larger absolute residuals.
+
+## 7. Plot the residuals against the fitted salaries. Does the plot look similar to what you had expected? Compute the Pearson correlation coefficient and comment on it!
+
+```{r}
+plot(res, mod_3$fitted.values, 
+     main = "Residuals vs. Fitted Salaries", 
+     xlab = "Residuals", 
+     ylab = "Fitted Salaries")
+```
+
+```{r}
+cor(res, mod_3$fitted.values)
+```
+
+The infinitesimal coefficient indicates residuals have no linear relationship with fitted values. Thus we can say how fitted values vary do not affect the residuals linearly.
+
+## 8. In the next analysis step, you want to look at the relationship between the current salary (SALNOW) and all available predictors except ID.
+
+```{r}
+mod_4 <- lm(SALNOW ~ . - ID, data = bank)
+summary(mod_4)
+```
+
+### (a) Which variables are significant at the 5% level?
+
+As the table above shows, significant variables are `SALBEG`, `TIME`, `EDLEVEL`, `WORK`, `JOBCAT (except for Office)`. 
+
+### (b) How much variability in salaries is explained by this model?
+
+The R-squared shows that 84.79 % of the variability is explained.
+
+### (c) Is there evidence for discrimination?
+
+If we consider discrimination with respect to gender, age and ethnic group size, those variables are not statistically significant to conclude discrimination exists.
+
+## 9. Remove AGE from the previous model.
+
+```{r}
+mod_5 <- lm(SALNOW ~ . - ID - AGE, data = bank)
+summary(mod_5)
+```
+
+### (a) Which variables are now significant at the 5% level?
+
+The significant variables are `SALBEG`, `SEX (if male)`, `TIME`, `WORK`, `JOBCAT (except for Office)`.
+
+### (b) How much variability in salaries is explained by this model?
+
+The R-squared suggests that the model explains 84.71% of the variability.
+
+### (c) Is there evidence for discrimination?
+
+In this model, we can see that SEX (if male) became a significant variable with a positive coefficient. Therefore, without considering age, women may suffer from discrimination.
+
+## 10. Compare all models that you have built in this home work assignment using the anova function. Briefly summarize your findings.
+
+From the anova tables below, we can see that the sum of the squared residuals decreases as the number of predictors increases, since the variance of the response variables is explained by the predictors. Also, the larger the variance one predictor explains, the more likely the predictor would be statistically significant. 
+
+```{r}
+anova(mod)
+```
+
+```{r}
+anova(mod_2)
+```
+```{r}
+anova(mod_3)
+```
+
+```{r}
+anova(mod_4)
+```
+
+```{r}
+anova(mod_5)
+```
