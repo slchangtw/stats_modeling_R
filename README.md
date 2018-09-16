@@ -1,1 +1,1 @@
-# Statistical Modeling with R at Jacobs (2018 Fall)
+# Statistical Modeling with R at Jacobs (Fall 2018)
