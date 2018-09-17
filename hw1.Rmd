@@ -211,7 +211,7 @@ In this model, we can see that SEX (if male) became a significant variable with 
 
 ## 10. Compare all models that you have built in this home work assignment using the anova function. Briefly summarize your findings.
 
-From the anova tables below, we can see that the sum of the squared residuals decreases as the number of predictors increases, since the variance of the response variables is explained by the predictors. Also, the larger the variance one predictor explains, the more likely the predictor would be statistically significant. 
+From the anova tables below, we can see that the sum of the squared residuals decreases as the number of predictors increases, since the sum of the squared residuals is the variance of the response variable that cannot be explained by the predictors. And more predictors allow the model to explain more variance of the response variable. Also, the larger the variance a predictor explains, the more likely the predictor would be statistically significant. 
 
 ```{r}
 anova(mod)
