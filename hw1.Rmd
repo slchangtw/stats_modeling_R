@@ -169,7 +169,7 @@ plot(res, mod_3$fitted.values,
 cor(res, mod_3$fitted.values)
 ```
 
-The infinitesimal coefficient indicates residuals have no linear relationship with fitted values. Thus we can say how fitted values vary do not affect the residuals linearly.
+The infinitesimal coefficient indicates residuals have no linear relationship with fitted values. Thus we can say how fitted values vary does not affect the residuals linearly.
 
 ## 8. In the next analysis step, you want to look at the relationship between the current salary (SALNOW) and all available predictors except ID.
 
@@ -188,7 +188,7 @@ The R-squared shows that 84.79 % of the variability is explained.
 
 ### (c) Is there evidence for discrimination?
 
-If we consider discrimination with respect to gender, age and ethnic group size, those variables are not statistically significant to conclude discrimination exists.
+If we consider discrimination with respect to gender, age and ethnic group size, those variables are not statistically significant to conclude that discrimination exists.
 
 ## 9. Remove AGE from the previous model.
 
