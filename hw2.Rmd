@@ -42,7 +42,7 @@ t.test(Price ~ two_cars_more, data = homes, var.equal = TRUE)
 
 ### (c) (half a point) Check whether equality of variance is actually given?
 
-Given the large p-value we can say the assumption of equal variance holds.
+Given the large p-value, we can say the assumption of equal variance holds.
 
 ```{r}
 var.test(Price ~ two_cars_more, data = homes) 
@@ -57,9 +57,11 @@ summary(aov_fit)
 
 ### (a) (half a point) Based on the one-way ANOVA-test is there a significant difference in house prices between the two groups.
 
-
+We can conclude that there exist a significant difference between the two groups since the p-value is small enough under significance level of 5%.
 
 ### (b) (half a point) Assess by using a linear model whether there is a significant difference in house prices between the two groups.
+
+The small p-value indicates there is a significant difference in house prices between the two groups.
 
 ```{r}
 mod_1 <- lm(Price ~ two_cars_more, data = homes)
@@ -67,6 +69,8 @@ summary(mod_1)
 ```
 
 ### (c) (1 point) Compare the results of the t-test, the linear model and the ANOVA. How do the p-values of the three tests relate to each other? How do the test statistics of the three tests relate to each other?
+
+The p-values in the results are the same, and the square of t value is equal to the F value.
 
 ## 3. Using the variable Gar as a factor, run an ANOVA model to see whether the garage size has a statistically significant impact on the average house price.
 
@@ -77,12 +81,19 @@ summary(aov_fit)
 
 ### (a) (half a point) Does the test result indicate that garage size has a statistically significant impact on house prices? Report the observed p-value for the overall ANOVA test!
 
+Under significant level of 5%, the average house price is significantly different among different garage sizes.
+
 ### (b) (half a point) Use the Tukey HSD post hoc test to determine for which garage sizes average house prices differ significantly at the 5% significance level.
+
+The average house price is different between the garage size of 0 and garage size of 2, as the table below indicates.
+
 ```{r}
 TukeyHSD(aov_fit, ordered = TRUE, conf.level = 0.95)
 ```
 
 ### (c) (1 point) Can you explain why the average house price for homes with garages for 2 cars is signficantly different from the average house price for homes without garage (garage with car size 0) while the average house price for homes with garages for 3 cars is NOT signficantly different from the average house price for homes without garage (garage with car size 0) despite the fact that the average house price for homes with garages for three cars is larger than the one for homes with garages for two cars.
+
+The boxplot shows that an outlier price exists in the garage size of 0, and value of the outlier (388) is larger than the maximum value (339.9) in the garage size of 3. Therefore there is no signficant difference between size of 0 and size of 3, even though the averge house price for homes with garages for three cars is the largest.
 
 ```{r}
 boxplot(Price ~ Gar, data = homes,
@@ -100,13 +111,19 @@ mod_2 <- lm(Price ~ . - two_cars_more, data = homes)
 
 ### (a) (1 point) According to this model and using the ANOVA table, which predictors have a signfifcant impact on the average house price at the 5% significance level?
 
+The table indicates that the signfifcant predictors are *Floor*, *Lot*, *Status (if Sold)* and *School (if Edison)*.
+
 ```{r}
 summary(mod_2)
 ```
 
 ### (b) (half a point) How good does the model fit?
 
+The R-squared values means that the total variance of house can be explained by this model by 54.68%.
+
 ### (c) (half a point) In which form is the variable Gar included in this model? As a factor or as a numeric variable? How do you see the difference in the output?
+
+The variable *Gar* is used as a numeric variable. Furthermore, the model below shows that how *Gar* is used as a factor variable. We therefore can see the *Gar* is treated in a dicrete manner, and there are three levels in *Gar* (the level of 0 in *Gar* is included in the intercept term).
 
 ```{r}
 homes$Gar <- as.factor(homes$Gar)
@@ -116,18 +133,19 @@ summary(mod_3)
 
 ## 5. (2 points) In the linear model from Question 4 either the line for variable Age or the one for variable Year is empty in the ANOVA table and in the coefficient table all corresponding numbers are marked as NA. Explain why!
 
-$Age = (Year - 1970) \times 0.1$
+The variable *Age* and variable *Year* have a perfect collinearity, their relationship can be represented as $Age = (Year - 1970) \times 0.1$. From the perspective of linear algebra, the matrix of predictors is not full rank, and hence the inverse of the matrix cannot be obtained. To circumvent this issue, the variable *Age* was excluded when the model was built, and its coefficient is shown as NA.
 
 ## 6. (2 points) Looking at the sign of the (significant) regression coefficients, do the empirically present relationships make sense?
 
+The sign of significant variables seem to be reasonably indicate the relationships among the variables and price. For instance, the  larger a house is, the higher its price is. Moreover, when a house is still in the market, the seller might try to drive the price up to reap profits. After the house is sold, its price then drops to its true value. Lastly, Edison may be a prestigious school, so the houses in its district can have a better price.
 
 ## 7. (2 points) Starting with a model using all predictors in the data set (except the grouped garage size and the variable Year) use the stepwise automatic model procedure to find the best linear model. Use the backward/forward strategy and the AIC as criterion. Briefly summarize the resulting model!
 
-```{r, results=FALSE}
+The AIC gradually declines in the process, as the tables below demonstrate. The final model consists of the variables *Floor*, *Lot*, *Bed*, *Status* and *School*. As expected the variables, except for *Bed*, are the signicant predictors in the full model in Task 4. 
+
+```{r}
 mod_4 <- lm(Price ~ . - two_cars_more - Year, data = homes)
 mod_5 <- step(mod_4, direction = "both")
-```
-```{r}
 summary(mod_5)
 ```
 
@@ -140,9 +158,13 @@ crPlots(mod_5)
 
 ### (a) (half a point) Check whether some quadratic effects should be included.
 
+The plot shows that there exist a slight quadratic effect in the variable *Lot*.
+
 ### (b) (half a point) Vary the smoothing parameter to 0.25 and to 0.75. Which parameter setting indicates the quadratic effects more clearly? [hint: Look at the help pages for car::crPlots and check the examples of using the smoothing parameter.]
 
 ### (c) (1 point) Add at least one quadratic effect to the model and compare the resulting model with the previous one. Is there a sufficient improvement in the model that justifies inclusion of the quadratic effect?
+
+If the quadratic effect of the variable *Lot* is included, the new model is shown as follows. The adjusted R-squared is increased by 2.5%, thus we would say that adding the quadratic effect of *Lot* is legitimate.
 
 ```{r}
 mod_6 <- lm(Price ~ Floor + Lot + Bed + Status + School + I(Lot ^ 2), data = homes)
