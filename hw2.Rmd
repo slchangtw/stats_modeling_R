@@ -1,0 +1,150 @@
+---
+title: "Homework 2"
+author: "Shun-Lung Chang, Dilip Hiremath"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, comment = "", fig.align = 'center', fig.height = 4, fig.width = 4)
+```
+
+```{r}
+load("data/OregonHomes.Rdata") # read the data into R
+```
+
+## 1. First of all, read the data file OregonHomes.Rdata (the data frame is called homes) and load the libraries you typically use. Create a new variable that groups the garage size information into two classes: one for garage size for no or one car, the second one for garage sizes for two or more cars.[hint: There are multiple ways to do this. E.g., using the cut command or the command recode from the car package.]
+Generate a boxplot for the house prices grouped by the newly created garage size groups.
+
+```{r}
+homes$two_cars_more <- homes$Gar >= 2
+```
+
+### (a) (1 point) Based on the box plot, do you expect that the mean house price differs significantly between the two groups?
+
+As the plot indicates, the mean house price between two groups may differ significantly given the high differece (approximately 45). 
+
+```{r}
+boxplot(Price ~ two_cars_more, 
+        data = homes, 
+        main = "Price vs. Garage size has two or more",
+        xlab = "Price",
+        ylab = "Garage size has two or more",
+        horizontal = TRUE)
+```
+
+### (b) (half a point) Using a t-test assuming equal variances assess whether there is a significant difference in house prices between the two groups.
+
+Considering a significance level of 5%, the p-value in the test is small enough to conclude that the house price in two groups are not equal.
+
+```{r}
+t.test(Price ~ two_cars_more, data = homes, var.equal = TRUE)
+```
+
+### (c) (half a point) Check whether equality of variance is actually given?
+
+Given the large p-value we can say the assumption of equal variance holds.
+
+```{r}
+var.test(Price ~ two_cars_more, data = homes) 
+```
+
+## 2. Run a one-way ANOVA-test (command aov to assess whether there is a significant difference in house prices between the two groups.
+
+```{r}
+aov_fit <- aov(Price ~ two_cars_more, data = homes)
+summary(aov_fit)
+```
+
+### (a) (half a point) Based on the one-way ANOVA-test is there a significant difference in house prices between the two groups.
+
+
+
+### (b) (half a point) Assess by using a linear model whether there is a significant difference in house prices between the two groups.
+
+```{r}
+mod_1 <- lm(Price ~ two_cars_more, data = homes)
+summary(mod_1)
+```
+
+### (c) (1 point) Compare the results of the t-test, the linear model and the ANOVA. How do the p-values of the three tests relate to each other? How do the test statistics of the three tests relate to each other?
+
+## 3. Using the variable Gar as a factor, run an ANOVA model to see whether the garage size has a statistically significant impact on the average house price.
+
+```{r}
+aov_fit <- aov(Price ~ as.factor(Gar), data = homes)
+summary(aov_fit)
+```
+
+### (a) (half a point) Does the test result indicate that garage size has a statistically significant impact on house prices? Report the observed p-value for the overall ANOVA test!
+
+### (b) (half a point) Use the Tukey HSD post hoc test to determine for which garage sizes average house prices differ significantly at the 5% significance level.
+```{r}
+TukeyHSD(aov_fit, ordered = TRUE, conf.level = 0.95)
+```
+
+### (c) (1 point) Can you explain why the average house price for homes with garages for 2 cars is signficantly different from the average house price for homes without garage (garage with car size 0) while the average house price for homes with garages for 3 cars is NOT signficantly different from the average house price for homes without garage (garage with car size 0) despite the fact that the average house price for homes with garages for three cars is larger than the one for homes with garages for two cars.
+
+```{r}
+boxplot(Price ~ Gar, data = homes,
+        main = 'Price vs. Garage',
+        xlab = 'Price',
+        ylab = 'Garage',
+        horizontal = TRUE)
+```
+
+## 4. Now, you build a linear model for the house price based on all predictor variables in the original data set (So, please do not include the newly created grouping variable for the garage size).
+
+```{r}
+mod_2 <- lm(Price ~ . - two_cars_more, data = homes)
+```
+
+### (a) (1 point) According to this model and using the ANOVA table, which predictors have a signfifcant impact on the average house price at the 5% significance level?
+
+```{r}
+summary(mod_2)
+```
+
+### (b) (half a point) How good does the model fit?
+
+### (c) (half a point) In which form is the variable Gar included in this model? As a factor or as a numeric variable? How do you see the difference in the output?
+
+```{r}
+homes$Gar <- as.factor(homes$Gar)
+mod_3 <- lm(Price ~ . - two_cars_more, data = homes)
+summary(mod_3)
+```
+
+## 5. (2 points) In the linear model from Question 4 either the line for variable Age or the one for variable Year is empty in the ANOVA table and in the coefficient table all corresponding numbers are marked as NA. Explain why!
+
+$Age = (Year - 1970) \times 0.1$
+
+## 6. (2 points) Looking at the sign of the (significant) regression coefficients, do the empirically present relationships make sense?
+
+
+## 7. (2 points) Starting with a model using all predictors in the data set (except the grouped garage size and the variable Year) use the stepwise automatic model procedure to find the best linear model. Use the backward/forward strategy and the AIC as criterion. Briefly summarize the resulting model!
+
+```{r, results=FALSE}
+mod_4 <- lm(Price ~ . - two_cars_more - Year, data = homes)
+mod_5 <- step(mod_4, direction = "both")
+```
+```{r}
+summary(mod_5)
+```
+
+## 8. Draw component/residual plots for all predictors in the final model resulting in the previous task. [hint: the package car contains a command crPlots to draw these plots.]
+
+```{r, fig.height=5, fig.width = 5}
+library(car)
+crPlots(mod_5)
+```
+
+### (a) (half a point) Check whether some quadratic effects should be included.
+
+### (b) (half a point) Vary the smoothing parameter to 0.25 and to 0.75. Which parameter setting indicates the quadratic effects more clearly? [hint: Look at the help pages for car::crPlots and check the examples of using the smoothing parameter.]
+
+### (c) (1 point) Add at least one quadratic effect to the model and compare the resulting model with the previous one. Is there a sufficient improvement in the model that justifies inclusion of the quadratic effect?
+
+```{r}
+mod_6 <- lm(Price ~ Floor + Lot + Bed + Status + School + I(Lot ^ 2), data = homes)
+summary(mod_6)
+```
