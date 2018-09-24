@@ -125,8 +125,9 @@ As the R-squared value suggests, the total variance of house can be explained by
 The variable *Gar* is used as a numeric variable. Furthermore, the model below shows that how *Gar* is used as a factor variable. We therefore can see the *Gar* is treated in a dicrete manner, and there are three levels in *Gar* (the level of 0 in *Gar* is included in the intercept term).
 
 ```{r}
-homes$Gar <- as.factor(homes$Gar)
-mod_3 <- lm(Price ~ . - two_cars_more, data = homes)
+home_2 <- homes
+home_2$Gar <- as.factor(home_2$Gar)
+mod_3 <- lm(Price ~ . - two_cars_more, data = home_2)
 summary(mod_3)
 ```
 
@@ -150,7 +151,7 @@ summary(mod_5)
 
 ## 8. Draw component/residual plots for all predictors in the final model resulting in the previous task. [hint: the package car contains a command crPlots to draw these plots.]
 
-```{r, fig.height=5, fig.width = 5}
+```{r, fig.height=4.2, fig.width = 5, message=FALSE}
 library(car)
 crPlots(mod_5)
 ```
@@ -161,9 +162,17 @@ The plot shows that there exist a slight quadratic effect in the variable *Lot*.
 
 ### (b) (half a point) Vary the smoothing parameter to 0.25 and to 0.75. Which parameter setting indicates the quadratic effects more clearly? [hint: Look at the help pages for car::crPlots and check the examples of using the smoothing parameter.]
 
+In the plots below, we can see a more discernible quadratic pattern when the smoothing parameter is 0.25.
+
+```{r, fig.height=4.2, fig.width = 5}
+crPlots(mod_5, smooth = list(span = 0.25))
+crPlots(mod_5, smooth = list(span = 0.75))
+```
+
+
 ### (c) (1 point) Add at least one quadratic effect to the model and compare the resulting model with the previous one. Is there a sufficient improvement in the model that justifies inclusion of the quadratic effect?
 
-If the quadratic effect of the variable *Lot* is included, the new model is shown as follows. The adjusted R-squared is increased by 2.5%, and therefore we would say that adding the quadratic effect of *Lot* is legitimate.
+If the quadratic effect of the variables *Lot* is included, the new model is shown as follows. The adjusted R-squared is increased by 2.5% compared to the model without the quadratic term. Besides, the p-value of the quadratic term (0.045) shows the predictor is significant. Therefore, we would say that adding the quadratic effect of *Lot* is legitimate.
 
 ```{r}
 mod_6 <- lm(Price ~ Floor + Lot + Bed + Status + School + I(Lot ^ 2), data = homes)
