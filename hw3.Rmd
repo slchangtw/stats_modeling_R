@@ -1,0 +1,76 @@
+---
+title: "Homework 3"
+author: "Shun-Lung Chang, Dilip Hiremath"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, comment = "", fig.align = 'center', fig.height = 4, fig.width = 4)
+```
+
+```{r}
+load('data/bankmarketing.Rdata')
+```
+
+## 1. Create a logistic regression model to predict the efficiency of the marketing campaign using y as dependent variable and no predictor, just the intercept.
+
+```{r}
+mod_1 <- glm(y ~ 1, data = bankmarketing, family = binomial(link = "logit"))
+summary(mod_1)
+```
+
+### (a) (half a point) How large is the AIC score for this model?
+
+```{r}
+AIC(mod_1)
+```
+
+### (b) (half a point) How large is the BIC score for this model?
+
+```{r}
+BIC(mod_1)
+```
+### (c) (1 point) Compute the log odds for the mean response and compare it to the coefficient estimate for the intercept in this model [hint: Be careful about the internal numeric coding of the variable y in the data set].
+
+```{r}
+log(sum(bankmarketing$y == 'yes') / sum(bankmarketing$y == 'no'))
+```
+## 2. Add duration as a predictor to the model.
+
+```{r}
+
+```
+
+
+### (a) (half a point) In comparison to the naive model, by how much has the AIC changed?
+
+### (b) (half a point) Is last contact duration (duration) a significant predictor in this model for modeling the probability of subscribing to a term deposit?
+
+### (c) (half a point) With growing duration of the last contact are clients less likely or are they more likely to subscribe to a term deposit?
+
+### (d) (half a point) According to the second model, what is the estimated probability of subscribing to a term deposit for a client who immediately terminated the last contact (i.e. duration equals 0)?
+
+## 3. Using the second model with duration as predictor,
+
+### (a) (1 point) compute the halfway point, i.e the last contact duration at which the estimated probability of subscribing to a term deposit equals 0.5
+
+### (b) (1 point) Compute the slope of the tangent to the regression curve at the halfway point.
+
+## 4. Compute a logistic regression model for subscribing to a term deposit using age, marital and duration as predictors.
+
+### (a) (1 point) Calculate the predictive probability of subscribing to a term deposit for a married client at the mean values of the numeric predictors.
+
+### (b) In the above model, calculate the effect on the probability of subscribing when keeping all other predictors constant and
+
+#### i. (half a point) changing duration from the mean score to 300 seconds;
+#### ii. (half a point) changing age from the mean score to one standard deviation above the mean score.
+
+## 5. (2 points) Compute a logistic regression model for the decision to subscribe to a term deposit using duration, campaign, and the interaction between the two. How do you interpret the regression coefficients? Are these interpretations meaningful? Give reasons for your answer!
+
+## 6. (2 points) Center the variables duration and campaign and re-build the model built in ques- tion 5. How do you interpret the regression coefficients? Are these interpretations meaningful? Give reasons for your answer! Draw the effects plot for this model and interpret!
+
+## 7. (2 points) Create a logistic regression model using y as dependent variable and all available predictors, except day and month. Which predictors are significant? Do the estimated coefficients make common sense to you?
+
+## 8. (2 points) Starting with the model of Question 7 use the automatic backward/forward selec- tion method to derive a suitable model. Report the significant predictors and the AIC score of the resulting model.
+
+## 9. (2 points) Draw a box plot of the residuals and look for extreme outliers. Remove the outlier and re-run the model you have obtained in Question 8. Which changes in the model are to be noted?
