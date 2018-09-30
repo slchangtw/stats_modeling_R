@@ -5,7 +5,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, comment = '', fig.align = 'center', fig.height = 4, fig.width = 4)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment = '', fig.align = 'center', fig.height = 4, fig.width = 4)
 ```
 
 ```{r}
@@ -62,7 +62,7 @@ The small p-value implys that the variable *duration* is significant.
 
 ### (c) (half a point) With growing duration of the last contact are clients less likely or are they more likely to subscribe to a term deposit?
 
-The positive coefficient suggests that customer with larger duration will be more likely to have a term deposit.
+The positive coefficient suggests that customer with larger duration tend to have a term deposit.
 
 ### (d) (half a point) According to the second model, what is the estimated probability of subscribing to a term deposit for a client who immediately terminated the last contact (i.e. duration equals 0)?
 
@@ -76,14 +76,14 @@ predict(mod_2, data.frame(duration = 0), type = 'response')
 
 ### (a) (1 point) compute the halfway point, i.e the last contact duration at which the estimated probability of subscribing to a term deposit equals 0.5.
 
-Based on our model, which is $ln(\frac{p}{1-p}) = \hat{\beta_o} + \hat{\beta_1} * duration$, if the estimated probability is 0, then we have $\hat{\beta_o} + \hat{\beta_1} * duration = 0$. Therefore, the duration at the halfway point is $duration = -\frac{\hat{\beta_o}}{\hat{\beta_1}}$, whose value in this model is 917.2802.
+Based on our model, $ln(\frac{p}{1-p}) = \hat{\beta_o} + \hat{\beta_1} * duration$, if the estimated probability is 0, then we have $\hat{\beta_o} + \hat{\beta_1} * duration = 0$. Therefore, the duration at the halfway point is $-\frac{\hat{\beta_o}}{\hat{\beta_1}}$, and the value in this model is 917.2802.
 
 ```{r}
 d = unname(-mod_2$coefficients[1] / mod_2$coefficients[2])
 d
 ```
 
-We can as well predict the estimated probability when duration is 917.2802. The probability as expected is 0.5. 
+We can as well predict the estimated probability when duration is 917.2802. As expected, the probability is 0.5. 
 
 ```{r}
 predict(mod_2, data.frame(duration = d), type = 'response')
@@ -91,7 +91,7 @@ predict(mod_2, data.frame(duration = d), type = 'response')
 
 ### (b) (1 point) Compute the slope of the tangent to the regression curve at the halfway point.
 
-A straight forward way to compute the slope of a function is to take its derivative. Also, the derivative of the model, $P(y = 1) = \frac{1}{1 + e^{-(\hat{\beta_o} + \hat{\beta_1} * X)}}$, is $\beta_1 * \frac{e^{-(\hat{\beta_o} + \hat{\beta_1} * X)}}{(1 + e^{-(\hat{\beta_o} + \hat{\beta_1} * X)})^2} = \beta_1 * P(y = 1) * (1 - P(y = 1))$. Accoring to the formula, we know the slope at the halfway point, namely $P(y = 1) = 0.5$, is 0.0008873882.
+A straight forward way to compute the slope of a function is to find its derivative. Also, the derivative of the model, $P(y = 1) = \frac{1}{1 + e^{-(\hat{\beta_o} + \hat{\beta_1} * X)}}$, is $\beta_1 * \frac{e^{-(\hat{\beta_o} + \hat{\beta_1} * X)}}{(1 + e^{-(\hat{\beta_o} + \hat{\beta_1} * X)})^2} = \beta_1 * P(y = 1) * (1 - P(y = 1))$. Accoring to this formula, we know the slope at the halfway point ($P(y = 1) = 0.5$) is 0.0008873882.
 
 ```{r}
 unname(mod_2$coefficients[2]) * 0.5 * (1 - 0.5)
@@ -143,7 +143,7 @@ predict(mod_3, data.frame(age = mean(bankmarketing$age) +
 
 ## 5. (2 points) Compute a logistic regression model for the decision to subscribe to a term deposit using duration, campaign, and the interaction between the two. How do you interpret the regression coefficients? Are these interpretations meaningful? Give reasons for your answer!
 
-The following table indicates that when duration is increased by one unit, the change of odds for the event y is 'yes' is $exp(0.00277087 + 0.00032618 \times campaign)$. On the other hand, if number of campaign is increased by one, the change of odds is $exp(-0.27602084 + 0.00032618 \times duration)$. Because of the small p-value, we can say that there exists interactions between the two variables.
+The following table indicates that when duration is increased by one unit, the change of odds for the event y is 'yes' is $exp(0.00277087 + 0.00032618 \times campaign)$. On the other hand, if number of campaign is increased by one, the change of odds is $exp(-0.27602084 + 0.00032618 \times duration)$. Because of the small p-value, we can conclude that there exists a significant interaction between the two variables.
 
 ```{r}
 mod_4 <- glm(y ~ duration + campaign + duration * campaign, 
@@ -154,7 +154,7 @@ summary(mod_4)
 
 ## 6. (2 points) Center the variables duration and campaign and re-build the model built in question 5. How do you interpret the regression coefficients? Are these interpretations meaningful? Give reasons for your answer! Draw the effects plot for this model and interpret!
 
-As the table below shows, the coefficient of the interaction term remains the same although the variables are centered. 
+As the table below shows, the coefficient of the interaction term remains the same although the variables are centered. And the effects plot shows that as the number of campaign increased by 10, the coefficient of variable *duration* will increase by 0.005.
 
 ```{r}
 c_duration <- scale(bankmarketing$duration, scale = FALSE)
@@ -166,14 +166,17 @@ summary(mod_5)
 ```
 
 ```{r}
-library(sjPlot)
+library(interplot)
+interplot(m = mod_5, var1 = 'c_duration', var2 = 'c_campaign') + 
+        xlab("Centered Number of Campaign") +
+        ylab("Estimated Coefficient for Centered Duration")
 ```
 
 ## 7. (2 points) Create a logistic regression model using y as dependent variable and all available predictors, except day and month. Which predictors are significant? Do the estimated coefficients make common sense to you?
 
 Under significance level of 5%, the significant variables are *housing*, *loan*, *contact (if unknown)*, *duration*, *campaign*, and *poutcome (if success)*.
 
-The coefficients of these variables seem valid. For the variables with a positive sign-duration, poutcome (if success)-, if clients' last contract was longer, it is more possible for them to have a term deposit since they might be satisfied with contract. We can also understand that a positive previous campaign outcome will lead to higher chance for a client to make a term deposit.
+The coefficients of these variables seem valid. For the variables with a positive sign: duration, poutcome (if success), if a client's last contract was longer, it is more possible for him/her to have a term deposit since he/she might be satisfied with contract. We can also understand that a positive previous campaign outcome will lead to higher chance for a client to make a term deposit.
 
 On the other hand, if people have a housing or personal load, it is anticipatable that they would not make a term deposit. Also, if the contact communication type is unknown, we may assume that the campaign was not made, and hence the client did not subscribe a term deposit. Interestingly, a higher number of campaign contacts will prevent people from subscribing a term deposit in that people might feel irritated if they had frequent contacts with campaign representatives.
 
@@ -185,7 +188,7 @@ summary(mod_6)
 
 ## 8. (2 points) Starting with the model of Question 7 use the automatic backward/forward selection method to derive a suitable model. Report the significant predictors and the AIC score of the resulting model.
 
-If we consider significance level of 5%, the significant predictors of the final model are *job (if retired)*, *housing*, *loan*, *contact (if unknown)*, *duration*, *campaign*, and *poutcome (if success)*. Additionally, the model's AIC score is 2330.4.
+If we consider a significance level of 5%, the significant predictors of the final model are *job (if retired)*, *housing*, *loan*, *contact (if unknown)*, *duration*, *campaign*, and *poutcome (if success)*. Additionally, the model's AIC score is 2330.4.
 
 ```{r, results=FALSE}
 mod_7 <- step(mod_6, direction = 'both')
@@ -196,9 +199,9 @@ summary(mod_7)
 
 ## 9. (2 points) Draw a box plot of the residuals and look for extreme outliers. Remove the outlier and re-run the model you have obtained in Question 8. Which changes in the model are to be noted?
 
-The boxplots shows the distribution of the residuals of the model obtained in Task 8. In this task, we define outliers as the residuals with a absolute value greater than 2.8. By doing so, a new model could be obtained after we removed the outliers. The AIC score was reduced from 2330.4 to 2277.3; the model was improved by removing the outliers.
+The boxplot shows the distribution of the residuals of the model obtained in Task 8. In this task, we define outliers as the residuals with a absolute value greater than 2.8. By doing so, a new model could be obtained after we removed the outliers. The AIC score was reduced from 2330.4 to 2277.3; the model was improved by removing the outliers.
 
-```{r}
+```{r, fig.width=5}
 res <- residuals(mod_7)
 boxplot(res, horizontal = TRUE, 
         main = 'Boxplot of Residuals',
