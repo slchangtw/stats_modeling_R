@@ -39,26 +39,102 @@ hsb <- read.dta('data/hsbdemo.dta')
 
 ### (a) (half a point) Calculate the $\chi^2$-test to assess the relationship between ses and prog.
 
-### (b) (half a point) Calculate the expected frequencies under the assumption that socio- econmic status has no effect on program choice. For which cells are expected frequencies higher than the observed ones?
+### (b) (half a point) Calculate the expected frequencies under the assumption that socio-econmic status has no effect on program choice. For which cells are expected frequencies higher than the observed ones?
 
 ### (c) (half a point) Do the results differ for the two sexes?
 
 ### (d) (half a point) Visualise the relationships using mosaicplots. Get any differences between females and males in relation to socio-economic status and program choice visible in the plots?
 
-## 5. Create a multinomial logistic regression model using prog as dependent variable and the fol- lowing predictors: female, ses, schtype, read, write, math, science, honors, awards. [hint: use the function multinom in hte package nnet.]
+## 5. Create a multinomial logistic regression model using prog as dependent variable and the following predictors: female, ses, schtype, read, write, math, science, honors, awards. [hint: use the function multinom in hte package nnet.]
+
+```{r}
+library(nnet)
+mod_1 <- multinom(prog ~ . - socst - cid, 
+                  data = hsb)
+summary(mod_1)
+```
 
 ### (a) (half a point) How large is the AIC score for this model?
 
+```{r}
+AIC(mod_1)
+```
+
 ### (b) (1.5 points) The default output does not include p-values. Compute p-values based on the Wald-test statistics and determine the coefficients that are statistically significantly different from zero!
 
+```{r}
+# compute p-values by definition
+# z <- summary(mod_1)$coefficients/summary(mod_1)$standard.errors
+# p <- (1 - pnorm(abs(z))) * 2
+# p
+
+# compute p-values by package function
+library(AER)
+coeftest(mod_1)
+```
+
 ## 6. Using the model from the previous question and the backward strategy with criterion AIC for variable selection, determine the significant coefficients in the resulting model.
+
+```{r, results=FALSE}
+mod_2 <- step(mod_1, direction = 'both')
+```
+```{r}
+summary(mod_2)
+```
 
 ### (a) (1 point) Which predictors are included in the resulting model? 
 
 ### (b) (half a point) What is the BIC score of the resulting model?
-
+```{r}
+BIC(mod_2)
+```
 ### (c) (half a point) What is the log-likelihood score of this model?
+
+```{r}
+logLik(mod_2)
+```
 
 ## 7. (2 points) Using the final model that resulted in Question 6 predict the probabilities for the three program types for the combination of all factor levels and the average score of numeric predictors in the model.
 
+```{r}
+d <- expand.grid(ses = c('low', 'middle', 'high'),
+                schtyp = c('private', 'public'),
+                read = mean(hsb$read),
+                math = mean(hsb$math),
+                science = mean(hsb$science))
+d
+```
+```{r}
+predict(mod_2, newdata = d, type = 'probs', se = TRUE)
+```
+
 ## 8. (2 points) Again using the final model that resulted in Question 6, we now want to investigate the specific dependency on the math score. Generate new data such that you have for each combination of factor levels a total of 51 math scores running from 30 to 80 in increments of one. The other numeric predictors enter again with their mean score into the prediction. Compute the predictions and average them for each level of socio-economic status.
+
+```{r, fig.width=4.5}
+d <- expand.grid(ses = c('low', 'middle', 'high'),
+                schtyp = c('private', 'public'),
+                read = mean(hsb$read),
+                math = 0,
+                science = mean(hsb$science))
+
+preds <- lapply(30:80, function(x) {
+    d$math <- x
+    pred <- predict(mod_2, newdata = d, type = 'probs', se = TRUE)
+    aggregate(pred, list(d$ses), mean)
+})
+
+# list to data.frame
+library(tidyr)
+df <- do.call(rbind, preds)
+df$score <- rep(30:80, each = 3)
+# transpose
+df_long <- gather(df, key = program, value = prob, -c(score, Group.1))
+
+library(ggplot2)
+ggplot(df_long, aes(x = score, y = prob, color = program)) + 
+    geom_line() +
+    facet_grid(rows = vars(Group.1)) +
+    labs(x = "Math Score", y = "Prob") +
+    theme_bw()
+```
+
