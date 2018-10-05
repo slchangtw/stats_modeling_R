@@ -49,12 +49,14 @@ hsb <- read.dta('data/hsbdemo.dta')
 
 ```{r}
 library(nnet)
-mod_1 <- multinom(prog ~ . - socst - cid, 
+mod_1 <- multinom(prog ~ . - id - socst - cid, 
                   data = hsb)
 summary(mod_1)
 ```
 
 ### (a) (half a point) How large is the AIC score for this model?
+
+The AIC score is 358.8871.
 
 ```{r}
 AIC(mod_1)
@@ -62,21 +64,23 @@ AIC(mod_1)
 
 ### (b) (1.5 points) The default output does not include p-values. Compute p-values based on the Wald-test statistics and determine the coefficients that are statistically significantly different from zero!
 
+As the table below shows, the variables *academic:(Intercept)*, *academic:math*, *academic:science* and *vocation:sesmiddle* are significant under significance level of 5%.
+
 ```{r}
 # compute p-values by definition
-# z <- summary(mod_1)$coefficients/summary(mod_1)$standard.errors
+# z <- summary(mod_1, Wald.ratios = TRUE)$Wald.ratios
 # p <- (1 - pnorm(abs(z))) * 2
 # p
 
 # compute p-values by package function
 library(AER)
-coeftest(mod_1)
+coeftest(mod_1)[, 4] < 0.05
 ```
 
 ## 6. Using the model from the previous question and the backward strategy with criterion AIC for variable selection, determine the significant coefficients in the resulting model.
 
 ```{r, results=FALSE}
-mod_2 <- step(mod_1, direction = 'both')
+mod_2 <- step(mod_1, direction = 'backward')
 ```
 ```{r}
 summary(mod_2)
@@ -84,11 +88,18 @@ summary(mod_2)
 
 ### (a) (1 point) Which predictors are included in the resulting model? 
 
+According to the table above, the variables *ses*, *schtyp*, *read*, *math* and *science* are included in the final model.
+
 ### (b) (half a point) What is the BIC score of the resulting model?
+
+The BIC score is 397.1684.
+
 ```{r}
 BIC(mod_2)
 ```
 ### (c) (half a point) What is the log-likelihood score of this model?
+
+The log-likelihood score is -161.496.
 
 ```{r}
 logLik(mod_2)
@@ -96,45 +107,33 @@ logLik(mod_2)
 
 ## 7. (2 points) Using the final model that resulted in Question 6 predict the probabilities for the three program types for the combination of all factor levels and the average score of numeric predictors in the model.
 
+The table below indicates academic is the most possible outcome in all combinations. But the students in the private school are more likely to take an academic program than that in the public school.
+
 ```{r}
 d <- expand.grid(ses = c('low', 'middle', 'high'),
                 schtyp = c('private', 'public'),
                 read = mean(hsb$read),
                 math = mean(hsb$math),
                 science = mean(hsb$science))
-d
 ```
 ```{r}
-predict(mod_2, newdata = d, type = 'probs', se = TRUE)
+pred <- predict(mod_2, newdata = d, type = 'probs', se = TRUE)
+cbind(d, pred)
 ```
 
 ## 8. (2 points) Again using the final model that resulted in Question 6, we now want to investigate the specific dependency on the math score. Generate new data such that you have for each combination of factor levels a total of 51 math scores running from 30 to 80 in increments of one. The other numeric predictors enter again with their mean score into the prediction. Compute the predictions and average them for each level of socio-economic status.
+
+The table below shows the average probabilities of taking different programs with respect to different socio-economic levels. As can be seen from the table, taking an academic program is the most probable in three socio-economic levels. Furthermore, people with a high socio-economic status is more likely to have an academic program.
 
 ```{r, fig.width=4.5}
 d <- expand.grid(ses = c('low', 'middle', 'high'),
                 schtyp = c('private', 'public'),
                 read = mean(hsb$read),
-                math = 0,
+                math = 30:80,
                 science = mean(hsb$science))
 
-preds <- lapply(30:80, function(x) {
-    d$math <- x
-    pred <- predict(mod_2, newdata = d, type = 'probs', se = TRUE)
-    aggregate(pred, list(d$ses), mean)
-})
+pred <-  predict(mod_2, newdata = d, type = 'probs', se = TRUE)
 
-# list to data.frame
-library(tidyr)
-df <- do.call(rbind, preds)
-df$score <- rep(30:80, each = 3)
-# transpose
-df_long <- gather(df, key = program, value = prob, -c(score, Group.1))
-
-library(ggplot2)
-ggplot(df_long, aes(x = score, y = prob, color = program)) + 
-    geom_line() +
-    facet_grid(rows = vars(Group.1)) +
-    labs(x = "Math Score", y = "Prob") +
-    theme_bw()
+bind_d <- cbind(d, pred)
+aggregate(bind_d[, 6:8], by = list(bind_d$ses), FUN = 'mean')
 ```
-
