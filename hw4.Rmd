@@ -15,9 +15,15 @@ hsb <- read.dta('data/hsbdemo.dta')
 
 ## 1. Cross-tabulate the variables ses and prog.
 
+```{r}
+ct <- table(hsb$prog, hsb$ses) / nrow(hsb)
+ct
+```
 ### (a) (half a point) Which program was chosen by the largest fraction of students with high socio-economic status?
 
 ### (b) (half a point) How many percent of students with low socio-economic status selected the general program?
+
+
 
 ### (c) (half a point) In the academic program are there more students with middle socioeconomic status than students with high socio-economic status?
 
@@ -27,23 +33,81 @@ hsb <- read.dta('data/hsbdemo.dta')
 
 ### (a) (half a point) Draw a mosaicplot visualising the contingency table of program choice and socio-economic status.
 
+```{r}
+mosaicplot(ct, main = 'Program vs. Socio-economic Status')
+```
+
 ### (b) (1.5 points) Are students with low ses less likely (as measured in odds) to choose the academic program than students with higher socio-economic status? Calculate the odds ratios for choosing the academic program comparing students with low ses to students with middle ses and to students with high ses. [hint: use the command loddsratio in the package vcd. First, aggregate the variable prog into a binary variable indicating whether the student has chosen an academic program yes or no.]
+
+```{r}
+library(vcd)
+hsb$academic_yes <- hsb$prog == 'academic'
+
+ct_2 <- table(hsb$academic_yes, hsb$ses) / nrow(hsb)
+loddsratio(ct_2)
+```
+
+```{r, echo=FALSE}
+hsb$academic_yes <- NULL
+```
 
 ## 3. Now, you assess the relationship between prog and ses using the $\chi^2$-statistic.
 
 ### (a) (1 point) Calculate the $\chi^2$-test to assess the relationship between ses and prog. Is the relationship statistically significant?
 
+```{r}
+chisq.test(hsb$prog, hsb$ses)
+```
+
 ### (b) (1 point) Calculate the expected frequencies under the assumption that socio-economic status has no effect on program choice. For which cells are expected frequencies higher than the observed ones?
+
+```{r}
+expected <- chisq.test(hsb$prog, hsb$ses)$expected
+expected - (ct * nrow(hsb))
+```
 
 ## 4. In the following, perform the last analysis separately for female and male students.
 
+```{r}
+hsb_m <- hsb[hsb$female == 'male', ]
+hsb_f <- hsb[hsb$female == 'female', ]
+```
+
 ### (a) (half a point) Calculate the $\chi^2$-test to assess the relationship between ses and prog.
 
+```{r}
+chisq.test(hsb_m$prog, hsb_m$ses)
+```
+
+```{r}
+chisq.test(hsb_f$prog, hsb_f$ses)
+```
+
 ### (b) (half a point) Calculate the expected frequencies under the assumption that socio-econmic status has no effect on program choice. For which cells are expected frequencies higher than the observed ones?
+
+```{r}
+# male
+observed_m <- table(hsb_m$prog, hsb_m$ses)
+chisq.test(hsb_m$prog, hsb_m$ses)$expected - observed_m
+```
+
+```{r}
+# female
+observed_f <- table(hsb_f$prog, hsb_f$ses)
+chisq.test(hsb_f$prog, hsb_f$ses)$expected - observed_f
+```
 
 ### (c) (half a point) Do the results differ for the two sexes?
 
 ### (d) (half a point) Visualise the relationships using mosaicplots. Get any differences between females and males in relation to socio-economic status and program choice visible in the plots?
+
+```{r, fig.width=5}
+mosaicplot(observed_m, 'Program vs. Socio-economic Status (Male)')
+```
+
+```{r, fig.width=5}
+mosaicplot(observed_f, 'Program vs. Socio-economic Status (Female)')
+```
 
 ## 5. Create a multinomial logistic regression model using prog as dependent variable and the following predictors: female, ses, schtype, read, write, math, science, honors, awards. [hint: use the function multinom in hte package nnet.]
 
