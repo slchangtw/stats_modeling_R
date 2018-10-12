@@ -1,0 +1,99 @@
+---
+title: "Homework 5"
+author: "Shun-Lung Chang, Dilip Hiremath"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment = '', fig.align = 'center', fig.height = 4, fig.width = 4)
+```
+
+```{r}
+library(vcd)
+library(vcdExtra)
+```
+
+## 1. (2 points) Construct the two-way table for gender and whether admitted. Find the odds ratio for admission of males vs. females and interpret. For which gender is the probability of admission higher?
+
+```{r}
+UCBAdmissions_m <- margin.table(UCBAdmissions, c(2, 1))
+oddsratio(UCBAdmissions_m, log = FALSE)
+```
+
+## 2. Draw a mosaic plot for the data aggregated over departments.
+
+```{r}
+mosaic(UCBAdmissions_m)
+```
+
+## 3. (3 points) Fit a saturated log-linear model to the frequencies using A and G as predictors. Calculate the odds ratio for admission of males vs. females. Display the predicted frequencies in a table and compare them to the observed frequencies displayed in Question 1.
+
+```{r}
+mod_1 <- glm(Freq ~ Admit * Gender, data = UCBAdmissions, family = 'poisson')
+summary(mod_1)
+```
+
+```{r}
+exp(unname(mod_1$coefficients[4]))
+```
+
+```{r}
+# transform the fitted value so that it has same format as UCBAdmissions
+tran_preds <- function(mod) {
+    f <- mod$fitted.values
+    dim(f) <- dim(UCBAdmissions)
+    dimnames(f) <- dimnames(UCBAdmissions)
+    return(f)
+}
+f <- tran_preds(mod_1)
+
+mod_table <- ftable(f, 
+                    row.vars = c("Admit", "Dept"),
+                    col.vars = "Gender")
+mod_table
+```
+
+```{r}
+obs_table <- ftable(UCBAdmissions, 
+                    row.vars = c("Admit", "Dept"),
+                    col.vars = "Gender")
+obs_table
+```
+
+
+## 4. (2 points) Fit an independence log-linear model to the frequencies using A, D and G as predictors. Display the predicted frequencies in a table and compare them to the observed frequencies. Calculate the estimated odds ratios for admission of males vs. females for each department.
+
+```{r}
+mod_2 <- glm(Freq ~ Admit + Gender + Dept, data = UCBAdmissions,
+             family = 'poisson')
+summary(mod_2)
+```
+
+## 5. Draw mosaic plots of admission versus gender for each department separately.
+
+```{r}
+mosaic.glm(mod_2, gp = shading_Friendly, labeling = labeling_residuals, formula = ~ Admit + Gender + Dept)
+```
+
+## 6. (3 points) Fit a log-linear model to the frequencies using A, D and G as predictors that includes all two-way interactions but not the three-way interaction. Display the predicted frequencies in a table and compare them to the predicted frequencies displayed in Question 4 as well as the observed frequencies. Calculate the estimated odds ratio for admission of males vs. females in this model.
+
+
+## 7. (2 points) Starting with the model in Question 6, use the stepwise method with the backward/forward option and BIC as criterion. Does this result in a simpler model? Interpret this model in plain English.
+
+## 8. (2 points) Calculate the saturated model using all three predictors and compare this model to the one obtained in Question 7 using AIC, BIC and the deviance criterion. Give a verbal summary of your findings.
+
+## 9. To run a logistic regression model with aggregated data it is best to create a data frame that comprises two frequency variables: one for the numbers of admitted students, and one for the numbers of rejected students. 
+
+```
+  UCBAdmissions <- as.data.frame(UCBAdmissions)
+  attach(UCBAdmissions)
+  UCBAdmit <- cbind(UCBAdmissions[Admit=="Rejected",-1],
+     A=UCBAdmissions[Admit=="Admitted", "Freq"])
+  names(UCBAdmit)[3] <- "R"
+  detach()
+```
+
+## Treating **cbind(A,R)** as response and D and G as qualitative predictors, fit the logit model having main effects only.
+
+### (a) (1.5 points) Report the prediction equation. Interpret the coefficients of D,G and the interaction in this equation.
+### (b) (half a point) To which log-linear model is this model equivalent?
