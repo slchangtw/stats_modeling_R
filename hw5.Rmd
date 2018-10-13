@@ -5,22 +5,31 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment = '', fig.align = 'center', fig.height = 4, fig.width = 4)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment = '', fig.align = 'center', fig.height = 3, fig.width = 3)
 ```
 
 ```{r}
+# import packages
 library(vcd)
-library(vcdExtra)
+library(RcmdrMisc) # stepwise()
+library(tidyr) # spread()
 ```
 
 ## 1. (2 points) Construct the two-way table for gender and whether admitted. Find the odds ratio for admission of males vs. females and interpret. For which gender is the probability of admission higher?
 
+The table below shows the numbers of admitted students with repestive to genders, and the oddsratio for admission of males vs. females is 1.84108. Given that this ratio is greater than 1, male students are more likely to get admission than the females ones.
+
 ```{r}
 UCBAdmissions_m <- margin.table(UCBAdmissions, c(2, 1))
+UCBAdmissions_m
+```
+```{r}
 oddsratio(UCBAdmissions_m, log = FALSE)
 ```
 
 ## 2. Draw a mosaic plot for the data aggregated over departments.
+
+The following shows the mosaic plot for the aggregated data.
 
 ```{r}
 mosaic(UCBAdmissions_m)
@@ -28,8 +37,12 @@ mosaic(UCBAdmissions_m)
 
 ## 3. (3 points) Fit a saturated log-linear model to the frequencies using A and G as predictors. Calculate the odds ratio for admission of males vs. females. Display the predicted frequencies in a table and compare them to the observed frequencies displayed in Question 1.
 
+The log-linear model with frequencies as the response and A and G as predictors is shown as below. The odds ratio for admission of males vs. females can be obtained by taking exponential of the coefficient of the *AdmitRejected:GenderFemale* term, and the odd ratio is 1.84108, which is same as the ratio in task 1.
+
 ```{r}
-mod_1 <- glm(Freq ~ Admit * Gender, data = UCBAdmissions, family = 'poisson')
+berkeley <- data.frame(UCBAdmissions)
+mod_1 <- glm(Freq ~ Admit * Gender, 
+             family = 'poisson', data = berkeley)
 summary(mod_1)
 ```
 
@@ -37,50 +50,131 @@ summary(mod_1)
 exp(unname(mod_1$coefficients[4]))
 ```
 
-```{r}
-# transform the fitted value so that it has same format as UCBAdmissions
-tran_preds <- function(mod) {
-    f <- mod$fitted.values
-    dim(f) <- dim(UCBAdmissions)
-    dimnames(f) <- dimnames(UCBAdmissions)
-    return(f)
-}
-f <- tran_preds(mod_1)
+The predicted frequency table is same as the observed frequency table in task 1.
 
-mod_table <- ftable(f, 
-                    row.vars = c("Admit", "Dept"),
-                    col.vars = "Gender")
+```{r}
+mod_table <- xtabs(mod_1$fitted.values ~ berkeley$Admit + berkeley$Gender)
 mod_table
 ```
 
-```{r}
-obs_table <- ftable(UCBAdmissions, 
-                    row.vars = c("Admit", "Dept"),
-                    col.vars = "Gender")
-obs_table
-```
-
-
 ## 4. (2 points) Fit an independence log-linear model to the frequencies using A, D and G as predictors. Display the predicted frequencies in a table and compare them to the observed frequencies. Calculate the estimated odds ratios for admission of males vs. females for each department.
 
+The requested model is shown as below. In the predicted frequency table, the ratio of the accepted to the rejected, regardless of gender, is always the same (0.6333454) in each department. The reason is that this ratio can be simplied to the ratio of total number of accepted students to total number of rejected students under the model settings. Given the same ratios, the estimated odds ratios are all equal to 1.
+
 ```{r}
-mod_2 <- glm(Freq ~ Admit + Gender + Dept, data = UCBAdmissions,
-             family = 'poisson')
+mod_2 <- glm(Freq ~ Admit + Gender + Dept,
+             family = 'poisson',
+             data = berkeley)
 summary(mod_2)
+```
+
+```{r}
+# predicted values (mod_2)
+mod_2_table <- xtabs(mod_2$fitted.values ~ berkeley$Gender + 
+                         berkeley$Admit + berkeley$Dept)
+
+# observed values
+obs_table <- xtabs(berkeley$Freq ~ berkeley$Gender + 
+                         berkeley$Admit + berkeley$Dept)
+```
+```{r}
+structable(obs_table)
+structable(mod_2_table)
+```
+
+```{r}
+# odds ratio for observed values
+(obs_table[1, 1, ]/obs_table[1, 2, ])/(obs_table[2, 1, ]/obs_table[2, 2, ])
+```
+
+```{r}
+# odds ratio for predicted values
+(mod_2_table[1, 1, ]/mod_2_table[1, 2, ])/(mod_2_table[2, 1, ]/mod_2_table[2, 2, ])
 ```
 
 ## 5. Draw mosaic plots of admission versus gender for each department separately.
 
+The following plots demonstrate admission versus gender for each department separately.
+
 ```{r}
-mosaic.glm(mod_2, gp = shading_Friendly, labeling = labeling_residuals, formula = ~ Admit + Gender + Dept)
+mosaicplot(obs_table[1:2,1:2,1], main = "Dept. A")
+mosaicplot(obs_table[1:2,1:2,2], main = "Dept. B")
+mosaicplot(obs_table[1:2,1:2,3], main = "Dept. C")
+mosaicplot(obs_table[1:2,1:2,4], main = "Dept. D")
+mosaicplot(obs_table[1:2,1:2,5], main = "Dept. E")
+mosaicplot(obs_table[1:2,1:2,6], main = "Dept. F")
 ```
+
 
 ## 6. (3 points) Fit a log-linear model to the frequencies using A, D and G as predictors that includes all two-way interactions but not the three-way interaction. Display the predicted frequencies in a table and compare them to the predicted frequencies displayed in Question 4 as well as the observed frequencies. Calculate the estimated odds ratio for admission of males vs. females in this model.
 
+The request model and the predicted frequencies are shown below. We can see the ratios of the accepted to the rejected differ accross departments and genders, since the two-way interactions were included in this model. Besides, the predicted frequencies are closer to the observed frequencies. The estimated odds ratio for admission of males vs. females was also computed, and the value is 1.84108, which is the same as the odds ratio in task 1.
+
+```{r}
+mod_3 <- glm(Freq ~ Admit + Gender + Dept + 
+                 Admit * Dept + Gender * Dept + Admit * Gender,
+             family = 'poisson', 
+             data = berkeley)
+summary(mod_3)
+```
+
+```{r}
+mod_3_table <- xtabs(mod_3$fitted.values ~ berkeley$Gender + 
+                         berkeley$Admit + berkeley$Dept)
+structable(mod_3_table)
+```
+
+```{r}
+(sum(mod_3_table[1, 1, ])/sum(mod_3_table[1, 2, ]))/(sum(mod_3_table[2, 1, ])/sum(mod_3_table[2, 2, ]))
+```
 
 ## 7. (2 points) Starting with the model in Question 6, use the stepwise method with the backward/forward option and BIC as criterion. Does this result in a simpler model? Interpret this model in plain English.
 
+The model obtained by stepwise method is shown below, and it omitted the interaction term between *Admit* and *Gender*.  
+
+In a three-main-effect model, if we have already known that the interaction between A and B is independent of that between B and C (denoted as **(AB, BC)**) and the interaction between B and C is independent of that between A and C, which is **(BC, AC)**, we can safely conclude that the interaction between A and B is independent of that between A and C (**(AB, AC)**). Therefore, the redundant interaction term was omitted.
+
+```{r, results=FALSE}
+mod_4 <- stepwise(mod_3, direction = 'backward/forward', criterion = 'BIC')
+```
+```{r}
+summary(mod_4)
+```
+
 ## 8. (2 points) Calculate the saturated model using all three predictors and compare this model to the one obtained in Question 7 using AIC, BIC and the deviance criterion. Give a verbal summary of your findings.
+
+The saturated model is shown below. A decrease can be seen in AIC and BIC scores and deviance criterion if we compare the model to the one in task 7. Furthermore, the predicted frequency table is the same as the observed table, since all the interaction terms were all taken into account in this model.
+
+```{r}
+mod_5 <- glm(Freq ~ Admit * Gender * Dept,
+             family = 'poisson', 
+             data = berkeley)
+summary(mod_5)
+```
+
+```{r}
+# compare AIC scores
+AIC(mod_4)
+AIC(mod_5)
+```
+
+```{r}
+# compare BIC scores
+BIC(mod_4)
+BIC(mod_5)
+```
+
+```{r}
+# Compute DIC = -2 * log(likelihood)
+-2 * logLik(mod_4)
+-2 * logLik(mod_5)
+```
+
+```{r}
+mod_5_table <- xtabs(mod_5$fitted.values ~ berkeley$Gender + 
+                         berkeley$Admit + berkeley$Dept)
+structable(mod_5_table)
+```
 
 ## 9. To run a logistic regression model with aggregated data it is best to create a data frame that comprises two frequency variables: one for the numbers of admitted students, and one for the numbers of rejected students. 
 
@@ -95,5 +189,22 @@ mosaic.glm(mod_2, gp = shading_Friendly, labeling = labeling_residuals, formula 
 
 ## Treating **cbind(A,R)** as response and D and G as qualitative predictors, fit the logit model having main effects only.
 
-### (a) (1.5 points) Report the prediction equation. Interpret the coefficients of D,G and the interaction in this equation.
+```{r}
+berkeley_t <- spread(berkeley, Admit, Freq)
+
+mod_6 <- glm(cbind(Rejected, Admitted) ~  Gender * Dept,
+             family = binomial(link = "logit"), 
+             data = berkeley_t)
+summary(mod_6)
+```
+
+### (a) (1.5 points) Report the prediction equation. Interpret the coefficients of D, G and the interaction in this equation.
+
+The prediction equation and the coefficients of each term are shown above. If we add the coefficient of *GenderFemale* and the coefficients of interaction terms between *Dept*, and *Gender*, the results are exactly the logarithmic odds ratios for admission of males vs. females in each department. And the exponent of the results are the observed odd ratios in task 4.
+
+```{r}
+exp(c(mod_6$coefficients[2], mod_6$coefficients[2] + mod_6$coefficients[8:12]))
+```
 ### (b) (half a point) To which log-linear model is this model equivalent?
+
+The model is equivalent to the saturated model using all three predictors in task 8.
