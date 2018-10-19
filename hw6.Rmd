@@ -1,0 +1,204 @@
+---
+title: "Homework 6"
+author: "Shun-Lung Chang, Dilip Hiremath"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, comment = '', fig.align = 'center', fig.height = 4, fig.width = 4)
+```
+
+```{r}
+# load packages
+library(Hmisc) # impute()
+library(corrplot) # corrplot()
+library(rpart) # rpart()
+library(rpart.plot) # rpart.plot()
+```
+
+```{r}
+# load dataset
+library(foreign)
+timss <- read.spss('data/timss.sav',
+                   use.value.labels = FALSE, 
+                   max.value.labels = Inf, 
+                   to.data.frame = TRUE)
+```
+
+## 1. First of all you take the eleven indicators (bsbgday1-6, bsbmday7, bsbsday8, bsbgday9, bsbgclub, bsbgpaid) that summarize outside school activities and you aim at identifying their factor structure. These variables comprise the answers of the students to the following questions: On a normal school day, how much time do you spend before or after school doing each of these things?
+```
+bsbgday1 I watch TV or videos 
+bsbgday2 I play computer games
+bsbgday3 I playing or talk with friends 
+bsbgday4 I do jobs at home 
+bsbgday5 I play sports
+bsbgday6 I read a book for enjoyment 
+bsbmday7 I study math
+bsbsday8 I study science
+bsgbday9 I study other subjects 
+bsbgclub I participate in clubs 
+bsbgpaid I work at a paid job
+```
+## The given answering categories are coded as: 1 = no time, 2= less than one hour, 3 = one to two hours, 4= more than two but less than 4 hours, 5 = more than five hours.
+### (a) (1 point) Check for missing values. Report how many missings are there in these eleven variables.
+
+```{r}
+colSums(is.na(timss[, 7:17]))
+```
+
+### (b) (1 point) Calculate the correlation matrix for these eleven variables. Which variables have the highest correlation coefficient?
+```{r}
+cor_m <- cor(timss[, c(7:17)], use = "complete")
+corrplot(cor_m, method = 'color')
+```
+## 2. (2 points) Using the command impute in the library **Hmisc** create new variables in which the missing values are imputed randomly for these eleven variables. In order to ensure reproducability of the results use the command set.seed(26112017) prior to the imputation. Re-calculate the correlation matrix and compute how much it differs from the correlation matrix that was calculated for the original data including the missings. (Hint: Just calculate the difference of the two correlation matrices and round the result to two digits.)
+
+```{r}
+set.seed(26112017)
+var_list <- names(timss[, 7:17])
+timss[paste0(var_list, '_imp')] <- lapply(timss[var_list], 
+                                    function(x) impute(x, 'random'))
+
+cor_m_imp <- cor(timss[, 79:89], use = 'complete')
+corrplot(cor_m_imp)
+```
+```{r}
+cor_m_diff <- cor_m - cor_m_imp
+cor_m_diff
+```
+
+## 3. (2 points) Next, you split the data into training and test data by randomly selecting 75% of your data for training, the remainder is for testing. Use set.seed(26112017) as seed for the random number generator to ensure replicability of your analysis. Report mean, median, and standard deviation for the international science score (bisciscr) for each of the two data sets (training and test).
+
+```{r}
+set.seed(26112017)
+index <- sample(1:nrow(timss), nrow(timss) * 0.75)
+tim_train <- timss[index, ]
+tim_test <- timss[-index, ]
+
+mean(tim_train$bisciscr)
+median(tim_train$bisciscr)
+sd(tim_train$bisciscr)
+
+mean(tim_test$bisciscr)
+median(tim_test$bisciscr)
+sd(tim_test$bisciscr)
+```
+## 4. Perform a principal component analysis on the training data.
+
+```{r}
+pca_m <- princomp(tim_train[, 79:89], cor = TRUE)
+```
+
+### (a) (1 point) How many factors do you extract according to the Kaiser criterion, how many according to the scree plot?
+
+```{r}
+# Kaiser criterion: eigenvalue larger than 1
+(pca_m$sdev ^ 2) > 1
+```
+
+```{r}
+screeplot(pca_m)
+```
+
+### (b) (1 point) Which percentage of variability of the original items is retained in the factor structure?
+
+```{r}
+sum(pca_m$sdev[1:4]^2) / sum(pca_m$sdev^2)
+```
+
+## 5. (2 points) Use the PCA model to predict PCA scores for the test data (use the function predict). Extract the first four principal components for the training and the test data and store them for later use. Plot the first two principal components for training and test data in one graphic using different colours for the two data sets.
+
+```{r}
+pca_m_pred <- predict(pca_m, tim_test)
+tim_train <- cbind(tim_train, pca_m$scores[, 1:4])
+colnames(tim_train)[90:93] <- paste0('pc', 1:4)
+
+tim_test <- cbind(tim_test, pca_m_pred[, 1:4])
+colnames(tim_test)[90:93] <- paste0('pc', 1:4)
+```
+
+```{r}
+plot(tim_train$pc1, tim_train$pc2, col = 'red')
+points(tim_test$pc1, tim_test$pc2, col = 'blue')
+```
+## 6. (2 points) Perform a factor analysis using the Kaiser criterion and a varimax rotation. Save regression scores for later use. Label the rotated factors.
+
+```{r}
+fact_m_1 <- factanal(tim_train[, 79:89], 
+                factors = 4, 
+                scores = "Bartlett",
+                rotation = "varimax")
+fact_m_1
+```
+
+```{r}
+tim_train <- cbind(tim_train, fact_m_1$scores)
+colnames(tim_train)[94:97] <- paste0('fv', 1:4)
+```
+
+## 7. (2 points) Perform a factor analysis using the Kaiser criterion and promax rotation. Is there a substantial difference between the two models? Which of the two models do you consider to be better?
+
+```{r}
+fact_m_2 <- factanal(tim_train[, 79:89], 
+                factors = 4, 
+                scores = "Bartlett",
+                rotation = "promax")
+fact_m_2
+```
+
+## 8. (2 points) Next, you run a linear regression model in order to predict the international science score (bisciscr) using bsbghome, bsbgedum, bsbgeduf, bsbgedus, bsbgsex, bsbgbrn1, bsbglang and the factors derived in question 6 as predictors. Provide a brief ver- bal summary of the model.
+
+```{r}
+lm_mod_1 <- lm(bisciscr ~ bsbghome + bsbgedum + bsbgeduf + 
+                 bsbgedus + bsbgsex + bsbgbrn1 + bsbglang + 
+                 fv1 + fv2 + fv3 + fv4, data = tim_train)
+summary(lm_mod_1)
+```
+
+## 9. (2 points) Next, you run a linear regression model in order to predict the international science score (bisciscr) using bsbghome, bsbgedum, bsbgeduf, bsbgedus, bsbgsex, bsbgbrn1, bsbglang and the first four principal components derived in question 5 as predictors. Compare the results of the two models and provide a brief summary.
+
+```{r}
+lm_mod_2 <- lm(bisciscr ~ bsbghome + bsbgedum + bsbgeduf + 
+                 bsbgedus + bsbgsex + bsbgbrn1 + bsbglang + 
+                 pc1 + pc2 + pc3 + pc4, data = tim_train)
+summary(lm_mod_2)
+```
+
+```{r}
+anova(lm_mod_1, lm_mod_2)
+```
+
+## 10. (2 points) Now, you run a tree model in order to predict the international science score (bisciscr) using bsbghome, bsbgedum, bsbgeduf, bsbgedus, bsbgsex, bsbgbrn1, bsbglang and the first four principal components derived in question 5 as predictors. Compare the results of the tree model to the two regression models and provide a brief summary.
+
+```{r}
+library(rpart)
+tree <- rpart(bisciscr ~ bsbghome + bsbgedum + bsbgeduf + 
+                  bsbgedus + bsbgsex + bsbgbrn1 + bsbglang + 
+                  pc1 + pc2 + pc3 + pc4, data = tim_train)
+summary(tree)
+
+```
+```{r}
+rpart.plot(tree)
+```
+## 11. (2 points) Predict the international science score using the tree model and using the model derived in Question 9 for the test data. Plot the predicted scores against the observed international science score in the test data and compute the correlation coefficients. Are you satisfied with the predictions of the two models?
+
+```{r}
+tree_preds <- predict(tree, tim_test)
+lm_preds <- predict(lm_mod_2, tim_test)
+```
+
+```{r}
+plot(tim_test$bisciscr, tree_preds)
+```
+```{r}
+cor(tim_test$bisciscr, tree_preds, use = 'complete')
+```
+
+```{r}
+plot(tim_test$bisciscr, lm_preds)
+```
+
+```{r}
+cor(tim_test$bisciscr, lm_preds, use = 'complete')
+```
